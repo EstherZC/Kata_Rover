@@ -1,6 +1,7 @@
 package com.codemanship.marsrover;
 
 import org.junit.Test;
+import refactoring.Obstacle;
 import refactoring.Rover;
 import refactoring.Rover.Position;
 
@@ -8,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static refactoring.Rover.Heading.*;
 import static refactoring.Rover.Order.*;
 
-public class Rover_Refactoring_ {
+public class Rover__ {
 
     @Test
     public void could_be_initialized_with_legacy_constructor() {
@@ -53,6 +54,23 @@ public class Rover_Refactoring_ {
         rover.go(Backward);
         assertThat(rover.heading()).isEqualTo(West);
         assertThat(rover.position()).isEqualTo(new Position(-3,4));
+    }
+    @Test
+    public void couldnt_go_forward() {
+        Rover rover = new Rover(South, new Position(-1, 1));
+        rover.addObstacle(new Obstacle(new Position(-1,0)));
+        rover.go(Forward);
+        assertThat(rover.heading()).isEqualTo(South);
+        assertThat(rover.position()).isEqualTo(new Position(-1,1));
+    }
+
+    @Test
+    public void couldnt_go_backward() {
+        Rover rover = new Rover(West, new Position(-4, 4));
+        rover.addObstacle(new Obstacle(new Position(-3,4)));
+        rover.go(Backward);
+        assertThat(rover.heading()).isEqualTo(West);
+        assertThat(rover.position()).isEqualTo(new Position(-4,4));
     }
 
     @Test

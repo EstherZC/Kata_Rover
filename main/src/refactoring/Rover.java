@@ -3,6 +3,7 @@ package refactoring;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public class Rover {
@@ -10,9 +11,9 @@ public class Rover {
 	private Heading heading;
 	private Position position;
 	private Map<Order, Action> actions = new HashMap<>();
+	private static Map<Position, Obstacle> obstacles = new HashMap<>();
 
 	public Rover(String facing, int x, int y) {
-
 		this(Heading.of(facing),new Position(x,y));
 	}
 
@@ -31,7 +32,12 @@ public class Rover {
 		this.actions.put(null, ()-> this.heading = this.heading);
 	}
 
+	public void addObstacle(Obstacle obstacle) {
+		obstacles.put(obstacle.position(), obstacle);
+	}
+
 	public Heading heading() {
+
 		return this.heading;
 	}
 
@@ -60,16 +66,21 @@ public class Rover {
 		private final int x;
 		private final int y;
 
+
 		public Position(int x, int y) {
 			this.x = x;
 			this.y = y;
 		}
 		public Position forward(Heading heading) {
-			return move(heading,1);
+			Position next = move(heading,1);
+			if(hasObstacle(next)) return this;
+			return next;
 		}
 
 		public Position backward(Heading heading) {
-			return move(heading,-1);
+			Position next =move(heading,-1);
+			if(hasObstacle(next)) return this;
+			return next;
 		}
 
 		public Position move(Heading heading, int i) {
@@ -80,6 +91,9 @@ public class Rover {
 				case West: return new Position(this.x-i, this.y);
 			}
 			return null;
+		}
+		private boolean hasObstacle(Position position) {
+			return Rover.obstacles.containsKey(position);
 		}
 
 		@Override
@@ -97,8 +111,8 @@ public class Rover {
 
 			return object != null && object.getClass() == Position.class;
 		}
-
-
+		@Override
+		public int hashCode() { return Objects.hash(x, y); }
 	}
 
 	public enum Order{
