@@ -7,163 +7,67 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 public class Rover {
-
-	private Heading heading;
-	private Position position;
-	private Map<Order, Action> actions = new HashMap<>();
-	private static Map<Position, Obstacle> obstacles = new HashMap<>();
-
-	public Rover(String facing, int x, int y) {
-		this(Heading.of(facing),new Position(x,y));
-	}
-
-	public Rover(Heading heading, int x, int y) {
-
-		this(heading, new Position(x,y));
-	}
-
-	public Rover(Heading heading, Position position) {
-		this.heading = heading;
-		this.position = position;
-		this.actions.put(Order.Left, ()-> this.heading = this.heading.turnLeft());
-		this.actions.put(Order.Right, ()-> this.heading = this.heading.turnRight());
-		this.actions.put(Order.Forward, ()-> this.position = this.position.forward(this.heading));
-		this.actions.put(Order.Backward, ()-> this.position = this.position.backward(this.heading));
-		this.actions.put(null, ()-> this.heading = this.heading);
-	}
+	private ViewPoint viewPoint;
+	public static Map<SimpleViewPoint.Position, Obstacle> obstacles = new HashMap<>();
 
 	public void addObstacle(Obstacle obstacle) {
 		obstacles.put(obstacle.position(), obstacle);
 	}
 
-	public Heading heading() {
-
-		return this.heading;
+	public ViewPoint viewPoint() {
+		return viewPoint;
 	}
 
-	public Position position(){
-
-		return this.position;
+	public Rover(ViewPoint viewPoint) {
+		this.viewPoint = viewPoint;
 	}
 
 	public void go(Order... orders){
-		go(Arrays.stream(orders));
+		set(go(Arrays.stream(orders)));
 	}
 
-	public void go(String instructions){
-		go(Arrays.stream(instructions.split("")).map(Order::of));
+	public void set(ViewPoint viewPoint) {
+		if (viewPoint == null) return;
+		this.viewPoint = viewPoint;
 	}
 
-	private  void go(Stream<Order> orders) {
-		orders.forEach(o->actions.get(o).execute());
+	public void go(String instructions) {
+		set(go(Arrays.stream(instructions.split("")).map(Order::of)));
 	}
 
-	private interface Action {
-		void execute();
+	private ViewPoint go(Stream<Order> orders) {
+		return orders.filter(Objects::nonNull).reduce(this.viewPoint, this::execute, (v1,v2)->null);
 	}
 
-	public static class Position {
-		private final int x;
-		private final int y;
-
-
-		public Position(int x, int y) {
-			this.x = x;
-			this.y = y;
-		}
-		public Position forward(Heading heading) {
-			Position next = move(heading,1);
-			if(hasObstacle(next)) return this;
-			return next;
-		}
-
-		public Position backward(Heading heading) {
-			Position next =move(heading,-1);
-			if(hasObstacle(next)) return this;
-			return next;
-		}
-
-		public Position move(Heading heading, int i) {
-			switch (heading){
-				case North: return new Position(this.x, this.y+i);
-				case South: return new Position(this.x, this.y-i);
-				case East: return new Position(this.x+i, this.y);
-				case West: return new Position(this.x-i, this.y);
-			}
-			return null;
-		}
-		private boolean hasObstacle(Position position) {
-			return Rover.obstacles.containsKey(position);
-		}
-
-		@Override
-		public boolean equals(Object object) {
-
-			return isSameClass(object) && equals((Position) object);
-		}
-
-		private boolean equals(Position position) {
-
-			return position == this || (x == position.x && y == position.y);
-		}
-
-		private boolean isSameClass(Object object) {
-
-			return object != null && object.getClass() == Position.class;
-		}
-		@Override
-		public int hashCode() { return Objects.hash(x, y); }
+	private ViewPoint execute(ViewPoint v, Order o) {
+		return v != null ? actions.get(o).execute(v) : null;
 	}
 
-	public enum Order{
-		Forward, Backward, Right, Left;
+	private Map<Order,Action> actions = new HashMap<>();
+	{
+		actions.put(Order.Left, ViewPoint::turnLeft);
+		actions.put(Order.Right, ViewPoint::turnRight);
+		actions.put(Order.Forward, ViewPoint::forward);
+		actions.put(Order.Backward, ViewPoint::backward);
+	}
 
-		public static Order of(char label){
-			if (label == 'F') return Forward;
-			if (label == 'B') return Backward;
+	public interface Action {
+		ViewPoint execute(ViewPoint viewPoint);
+	}
+
+	public enum Order {
+		Forward, Backward, Left, Right;
+
+		public static Order of(char label) {
 			if (label == 'L') return Left;
 			if (label == 'R') return Right;
+			if (label == 'F') return Forward;
+			if (label == 'B') return Backward;
 			return null;
 		}
 
 		public static Order of(String value) {
-
 			return of(value.charAt(0));
 		}
-
-
-	}
-
-	public enum Heading {
-		North, East, South, West;
-
-		public static Heading of(String label) {
-
-			return of(label.charAt(0));
-		}
-
-		public static Heading of(char label) {
-			if (label == 'N') return North;
-			if (label == 'S') return South;
-			if (label == 'W') return West;
-			if (label == 'E') return East;
-			return null;
-		}
-
-		public Heading turnRight() {
-
-			return values()[add(+1)];
-		}
-
-		public Heading turnLeft() {
-
-			return values()[add(-1)];
-		}
-
-		private int add(int offset) {
-			return (this.ordinal() + offset + values().length) % values().length;
-		}
-
 	}
 }
-
